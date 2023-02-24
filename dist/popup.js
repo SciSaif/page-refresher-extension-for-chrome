@@ -1,0 +1,2 @@
+(()=>{const e=document.getElementById("toggle");console.log("toggle"),chrome.storage.sync.get("enabled",(({enabled:o})=>{e.checked=o})),e.addEventListener("change",(e=>{const o=e.target.checked;console.log("checked",o),chrome.runtime.sendMessage({action:o},(function(e){console.log(e)})),chrome.storage.sync.set({enabled:o})}))})();
+//# sourceMappingURL=popup.js.map

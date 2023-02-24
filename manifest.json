@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Chegg Refresh",
+  "version": "1.0",
+  "description": "Refreshes the page every 5 seconds.",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "tabs",
+    "storage",
+    "scripting",
+    "activeTab", 
+    "notifications"
+  ],
+  "icons": {
+    "16": "/images/chegg-16.png",
+    "48": "/images/chegg-48.png"
+  },
+  "background": {
+    "service_worker": "dist/background.js"
+  },
+
+  "host_permissions": ["https://expert.chegg.com/expertqna"]
+}
