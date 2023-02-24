@@ -5,7 +5,6 @@ console.log("Chegg Auto Refresh is running");
 
 // function to refresh the page after 5 seconds if the content is found
 async function refreshPage(tab: chrome.tabs.Tab) {
-    console.log("in refresh page", tab);
     const results = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: () => {
@@ -46,23 +45,23 @@ async function refreshPage(tab: chrome.tabs.Tab) {
     }
 }
 
-// listen for tab activation
-chrome.tabs.onActivated.addListener(async function (activeInfo) {
-    if (!enabled) return;
+// // listen for tab activation
+// chrome.tabs.onActivated.addListener(async function (activeInfo) {
+//     if (!enabled) return;
 
-    let queryOptions = { active: true, currentWindow: true };
-    let [tab] = await chrome.tabs.query(queryOptions);
-    if (!tab) {
-        // console.log("no tab found");
-        return;
-    }
-    if (!tab.url?.startsWith("https://expert.chegg.com/expertqna")) {
-        // console.log("Not Chegg");
-        return;
-    }
+//     let queryOptions = { active: true, currentWindow: true };
+//     let [tab] = await chrome.tabs.query(queryOptions);
+//     if (!tab) {
+//         // console.log("no tab found");
+//         return;
+//     }
+//     if (!tab.url?.startsWith("https://expert.chegg.com/expertqna")) {
+//         // console.log("Not Chegg");
+//         return;
+//     }
 
-    refreshPage(tab);
-});
+//     refreshPage(tab);
+// });
 
 // listen for tab refresh
 chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
@@ -79,35 +78,6 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
         }, 10000);
     }
 });
-
-//popup.html
-// <!DOCTYPE html>
-// <html>
-//   <head>
-//     <title>Auto Refresh</title>
-//   </head>
-//   <body>
-//     <label>
-//       <input type="checkbox" id="toggle">
-//       Auto Refresh
-//     </label>
-//     <script src="dist/popup.ts"></script>
-//   </body>
-// </html>
-
-// popup.ts
-// const toggle = document.getElementById("toggle") as HTMLInputElement;
-// console.log("toggle");
-
-// chrome.storage.sync.get("enabled", ({ enabled }) => {
-//     toggle.checked = enabled;
-// });
-
-// toggle.addEventListener("change", (e: Event) => {
-//     const target = e.target as HTMLInputElement;
-//     const checked = target.checked;
-//     chrome.storage.sync.set({ enabled: checked });
-// });
 
 // set enabled to true if the toggle is checked and false if it is not
 chrome.storage.sync.get("enabled", ({ enabled }) => {
