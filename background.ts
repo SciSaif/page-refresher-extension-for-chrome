@@ -1,5 +1,6 @@
 let timerId: any;
-let enabled = false;
+let refreshEnabled = false;
+// let bgEnabled = false;
 
 console.log("Chegg Auto Refresh is running");
 
@@ -8,11 +9,25 @@ async function refreshPage(tab: chrome.tabs.Tab) {
     const results = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: () => {
-            const contentFound = !!document.querySelector(".sc-kMizLa");
+            console.log("sdfsd");
+            const contentFound = !!document.querySelector(
+                'div[data-test="no-question"]'
+            );
+            // console.log("bgEnabled: ", bgEnabled);
+            // get bgEnabled from local storage
+            chrome.storage.sync.get("bgEnabled", ({ bgEnabled }) => {
+                console.log("bgEnabled: ", bgEnabled);
+                if (!contentFound && bgEnabled) {
+                    document.querySelector("body").style.backgroundColor =
+                        "red";
+                }
+            });
+
+            // console.log("contentFound", contentFound);
             return contentFound;
         },
     });
-    // console.log("yooo!: ", results);
+    console.log("yooo!: ", results);
 
     if (chrome.runtime.lastError) {
         console.error(chrome.runtime.lastError);
@@ -31,7 +46,7 @@ async function refreshPage(tab: chrome.tabs.Tab) {
     }
     // else if content is found, refresh the page after 5 seconds
     else {
-        // console.log("Content not found");
+        console.log("Content not found");
         // If the content is found, clear the timer
         clearTimeout(timerId);
         chrome.notifications.create("", {
@@ -40,10 +55,100 @@ async function refreshPage(tab: chrome.tabs.Tab) {
             iconUrl: "/images/chegg-48.png",
             type: "basic",
         });
-        enabled = false;
+        refreshEnabled = false;
+
+        chrome.storage.sync.set({ refreshEnabled: false });
+
         // alert the user that the content is not found
     }
 }
+
+// listen for tab refresh
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+    // console.log("enabled", enabled);
+    if (!refreshEnabled) return;
+    // console.log("e1");
+    if (
+        !(
+            tab.url?.startsWith("https://expert.chegg.com/expertqna") ||
+            tab.url?.startsWith("https://expert.chegg.com/qna/authoring/answer")
+        )
+    ) {
+        // console.log("Not Chegg");
+        return;
+    }
+    // console.log("e2");
+    if (changeInfo.status === "complete") {
+        // console.log("tab updated", changeInfo, tab);
+        setTimeout(() => {
+            refreshPage(tab);
+        }, 8000);
+    }
+
+    return true;
+});
+
+// // set enabled to true if the toggle is checked and false if it is not
+// chrome.storage.sync.get("refreshEnabled", ({ refreshEnabled }) => {
+//     if (refreshEnabled) {
+//         refreshEnabled = true;
+//     } else {
+//         refreshEnabled = false;
+//     }
+// });
+
+// Add a message listener to listen for messages from popup.js
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (request.refreshEnabled == true) {
+        refreshEnabled = true;
+        console.log("refresh enabled");
+        // Get the active tab
+        // const [tab] = await chrome.tabs.query({
+        //     active: true,
+        //     currentWindow: true,
+        // });
+        chrome.tabs
+            .query({
+                active: true,
+                currentWindow: true,
+            })
+            .then((tabs) => {
+                const tab = tabs[0];
+                console.log("tab", tab);
+                if (!tab) return;
+                if (
+                    !(
+                        tab.url?.startsWith(
+                            "https://expert.chegg.com/expertqna"
+                        ) ||
+                        tab.url?.startsWith(
+                            "https://expert.chegg.com/qna/authoring/answer"
+                        )
+                    )
+                ) {
+                    return true;
+                }
+                refreshPage(tab);
+                // console.log("after ref resh page");
+            });
+        return true;
+    } else if (request.refreshEnabled == false) {
+        console.log("refresh disabled");
+        refreshEnabled = false;
+        return true;
+    }
+    // else if (request.bgEnabled == true) {
+    //     console.log("bg enabled");
+    //     bgEnabled = true;
+    //     return true;
+    // } else if (request.bgEnabled == false) {
+    //     console.log("bg disabled");
+    //     bgEnabled = false;
+    //     return true;
+    // }
+
+    return false;
+});
 
 // // listen for tab activation
 // chrome.tabs.onActivated.addListener(async function (activeInfo) {
@@ -62,52 +167,3 @@ async function refreshPage(tab: chrome.tabs.Tab) {
 
 //     refreshPage(tab);
 // });
-
-// listen for tab refresh
-chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
-    if (!enabled) return;
-
-    if (!tab.url?.startsWith("https://expert.chegg.com/expertqna")) {
-        // console.log("Not Chegg");
-        return;
-    }
-    if (changeInfo.status === "complete") {
-        // console.log("tab updated", changeInfo, tab);
-        setTimeout(() => {
-            refreshPage(tab);
-        }, 10000);
-    }
-});
-
-// set enabled to true if the toggle is checked and false if it is not
-chrome.storage.sync.get("enabled", ({ enabled }) => {
-    if (enabled) {
-        enabled = true;
-    } else {
-        enabled = false;
-    }
-});
-
-// Add a message listener to listen for messages from popup.js
-chrome.runtime.onMessage.addListener(async function (
-    request,
-    sender,
-    sendResponse
-) {
-    // If the request action is "runScript"
-    if (request.action == true) {
-        console.log("enabled");
-        enabled = true;
-        // Get the active tab
-        const [tab] = await chrome.tabs.query({
-            active: true,
-            currentWindow: true,
-        });
-        if (!tab) return;
-        refreshPage(tab);
-    } else {
-        console.log("disabled");
-        enabled = false;
-    }
-    sendResponse({ result: "success" });
-});
